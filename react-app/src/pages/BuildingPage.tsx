@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
-import { useChrome } from '../components/AppLayout'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import type { Tag, TagPhoto, TagPhotoKind, TagType } from '../app/types'
 import { repo } from '../app/repo'
 import { notify } from '../app/notify'
@@ -49,7 +48,7 @@ function tagGlyph(tag: Tag): string {
 type Viewport = { scale: number; tx: number; ty: number }
 
 export function BuildingPage() {
-  const chrome = useChrome()
+  const nav = useNavigate()
   const { buildingId } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const [sel, setSel] = useState<Selected>({ kind: 'none' })
@@ -66,10 +65,13 @@ export function BuildingPage() {
   const [err, setErr] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'building' | 'tag'>('building')
   const [downloadingReport, setDownloadingReport] = useState(false)
+  const [confirmDeleteBuilding, setConfirmDeleteBuilding] = useState(false)
   const photoRef = useRef<HTMLDivElement | null>(null)
   const [photoSize, setPhotoSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 })
   const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null)
   const [vp, setVp] = useState<Viewport>({ scale: 1, tx: 0, ty: 0 })
+  const [buildingNameEdit, setBuildingNameEdit] = useState('')
+  const [buildingLocationEdit, setBuildingLocationEdit] = useState('')
   const imgProbeRef = useRef<HTMLImageElement | null>(null)
   const cleaningPhotoInputRef = useRef<HTMLInputElement | null>(null)
   const pointers = useRef(new Map<number, { x: number; y: number }>())
@@ -197,10 +199,9 @@ export function BuildingPage() {
 
   useEffect(() => {
     if (!building) return
-    chrome.setTitle(building.name)
-    return () => chrome.setTitle('Vanguard')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [building?.id])
+    setBuildingNameEdit(building.name)
+    setBuildingLocationEdit(building.location ?? '')
+  }, [building?.id, building?.name])
 
   useEffect(() => {
     const host = photoRef.current
@@ -709,6 +710,29 @@ export function BuildingPage() {
     })
   }
 
+  function commitBuildingName() {
+    if (!buildingId || !building) return
+    const next = buildingNameEdit.trim()
+    if (next === building.name.trim()) return
+    setBuilding((cur) => (cur ? { ...cur, name: next } : cur))
+    repo.updateBuilding(buildingId, { name: next }).catch(() => {
+      bump()
+      notify.push({ message: 'Could not save building name', tone: 'danger' })
+    })
+  }
+
+  function commitBuildingLocation() {
+    if (!buildingId || !building) return
+    const next = buildingLocationEdit.trim()
+    const cur = (building.location ?? '').trim()
+    if (next === cur) return
+    setBuilding((c) => (c ? { ...c, location: next ? next : undefined } : c))
+    repo.updateBuilding(buildingId, { location: next }).catch(() => {
+      bump()
+      notify.push({ message: 'Could not save building location', tone: 'danger' })
+    })
+  }
+
   async function downloadReport() {
     if (!buildingId) return
     try {
@@ -743,9 +767,69 @@ export function BuildingPage() {
     }
   }
 
+  async function deleteBuildingNow() {
+    if (!buildingId) return
+    try {
+      await repo.deleteBuilding(buildingId)
+      notify.push({ message: 'Building deleted' })
+      nav('/buildings', { replace: true })
+    } catch (e) {
+      notify.push({ message: e instanceof Error ? e.message : String(e), tone: 'danger' })
+    } finally {
+      setConfirmDeleteBuilding(false)
+    }
+  }
+
   return (
     <div className="page">
       <div className="building-layout">
+      <div className="building-main-col">
+        <div className="field building-name-field">
+          <label htmlFor="building-name">Building</label>
+          <div className="building-name-row">
+            <input
+              id="building-name"
+              type="text"
+              autoComplete="off"
+              value={buildingNameEdit}
+              onChange={(e) => setBuildingNameEdit(e.target.value)}
+              onBlur={commitBuildingName}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+              }}
+            />
+            <button
+              className="icon-btn building-delete-btn"
+              type="button"
+              aria-label="Delete building"
+              onClick={() => setConfirmDeleteBuilding(true)}
+              style={{
+                background: 'rgba(220, 38, 38, 0.1)',
+                border: '1px solid rgba(220, 38, 38, 0.25)',
+                color: 'rgba(185, 28, 28, 1)',
+              }}
+            >
+              <span className="material-symbols-outlined" aria-hidden="true">
+                delete
+              </span>
+            </button>
+          </div>
+        </div>
+        <div className="field building-location-field">
+          <label htmlFor="building-location">Location</label>
+          <input
+            id="building-location"
+            type="text"
+            autoComplete="off"
+            value={buildingLocationEdit}
+            onChange={(e) => setBuildingLocationEdit(e.target.value)}
+            onBlur={commitBuildingLocation}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+            }}
+            placeholder="—"
+          />
+        </div>
       <div
         className="building-photo"
         role="application"
@@ -1094,6 +1178,7 @@ export function BuildingPage() {
           })()}
         </div>
       </div>
+      </div>
 
       <div className="tabs" aria-label="Building details">
         <div className="tab-list" role="tablist" aria-label="Details tabs">
@@ -1124,8 +1209,7 @@ export function BuildingPage() {
         {activeTab === 'building' && (
           <div className="tab-panel" role="tabpanel">
             <div className="kv">
-              <div className="k">Location</div>
-              <div className="v">{b.location ?? '—'}</div>
+              <div className="k">Summary</div>
             </div>
             <div className="info-grid" aria-label="Tag summary">
               <div className="info-card info-card--anchors">
@@ -1233,6 +1317,17 @@ export function BuildingPage() {
           setCleaningPhotoPick(null)
         }}
       />
+
+      {confirmDeleteBuilding && (
+        <ConfirmDialog
+          title="Delete building?"
+          description="This will permanently delete the building and all its tags."
+          confirmText="Delete"
+          tone="danger"
+          onCancel={() => setConfirmDeleteBuilding(false)}
+          onConfirm={deleteBuildingNow}
+        />
+      )}
 
       {confirmDeleteTagId && (
         <ConfirmDialog

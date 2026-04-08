@@ -110,6 +110,41 @@ public sealed class BuildingsController : ControllerBase
         return NoContent();
     }
 
+    public sealed record PatchBuildingRequest(string? Name, string? Location);
+
+    [HttpPatch("{id:guid}")]
+    public async Task<IActionResult> Patch(Guid id, [FromBody] PatchBuildingRequest req)
+    {
+        var building = await _db.Buildings.FirstOrDefaultAsync(b => b.Id == id);
+        if (building is null) return NotFound();
+
+        if (req.Name is not null)
+            building.Name = req.Name.Trim();
+
+        if (req.Location is not null)
+            building.Location = string.IsNullOrWhiteSpace(req.Location) ? null : req.Location.Trim();
+
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var building = await _db.Buildings
+            .Include(b => b.Tags)
+            .ThenInclude(t => t.Photos)
+            .Include(b => b.Tags)
+            .ThenInclude(t => t.Comments)
+            .FirstOrDefaultAsync(b => b.Id == id);
+
+        if (building is null) return NotFound();
+
+        _db.Buildings.Remove(building);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     public sealed record AddTagRequest(TagType Type, double X, double Y);
 
     [HttpPost("{id:guid}/tags")]

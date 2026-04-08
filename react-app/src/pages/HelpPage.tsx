@@ -1,6 +1,3 @@
-import { useEffect } from 'react'
-import { useChrome } from '../components/AppLayout'
-
 function Section(props: { title: string; children: React.ReactNode }) {
   return (
     <div
@@ -27,13 +24,6 @@ function Bullet(props: { children: React.ReactNode }) {
 }
 
 export function HelpPage() {
-  const chrome = useChrome()
-
-  useEffect(() => {
-    chrome.setTitle('Help')
-    return () => chrome.setTitle('Vanguard')
-  }, [chrome])
-
   return (
     <div className="page">
       <h1 className="page-title">Help</h1>

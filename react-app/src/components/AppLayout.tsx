@@ -1,28 +1,12 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { notify, type Toast } from '../app/notify'
-
-type Chrome = {
-  title: string
-  setTitle: (title: string) => void
-}
-
-const ChromeContext = createContext<Chrome | null>(null)
-
-export function useChrome(): Chrome {
-  const ctx = useContext(ChromeContext)
-  if (!ctx) throw new Error('useChrome must be used within AppLayout')
-  return ctx
-}
 
 export function AppLayout() {
   const nav = useNavigate()
   const loc = useLocation()
   const [toasts, setToasts] = useState<Toast[]>([])
   const [menuOpen, setMenuOpen] = useState(false)
-  const [title, setTitle] = useState('Vanguard')
-
-  const chrome = useMemo<Chrome>(() => ({ title, setTitle }), [title])
 
   useEffect(() => notify.subscribe(setToasts), [])
   useEffect(() => {
@@ -45,7 +29,7 @@ export function AppLayout() {
           ) : (
             <div style={{ width: 40, height: 40 }} aria-hidden="true" />
           )}
-          <div style={{ fontWeight: 800, fontSize: 14 }}>{title}</div>
+          <div style={{ fontWeight: 800, fontSize: 14 }}>Vanguard</div>
           <button
             className="icon-btn"
             aria-label="Menu"
@@ -106,9 +90,7 @@ export function AppLayout() {
         )}
 
         <div className="app-content">
-          <ChromeContext.Provider value={chrome}>
-            <Outlet />
-          </ChromeContext.Provider>
+          <Outlet />
         </div>
 
         {toasts.length > 0 && (

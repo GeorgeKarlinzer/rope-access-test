@@ -164,6 +164,36 @@ a {
   gap: 14px;
 }
 
+.building-main-col {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.building-name-field {
+  margin: 0;
+}
+
+.building-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.building-name-row > input[type='text'] {
+  flex: 1;
+  min-width: 0;
+}
+
+.building-delete-btn {
+  width: 44px;
+  height: 44px;
+}
+
+.building-location-field {
+  margin: 0;
+}
+
 @media (min-width: 980px) {
   .building-layout {
     grid-template-columns: 1.35fr 1fr;

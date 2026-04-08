@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useChrome } from '../components/AppLayout'
 import type { Tag, TagPhoto, TagPhotoKind } from '../app/types'
 import { repo } from '../app/repo'
 import { notify } from '../app/notify'
@@ -40,7 +39,6 @@ function statusOptions(tag: Tag): Array<{ value: Tag['status']; label: string }>
 }
 
 export function TagDetailsPage() {
-  const chrome = useChrome()
   const { buildingId, tagId } = useParams()
   const [building, setBuilding] = useState<Awaited<ReturnType<typeof repo.getBuilding>>>(undefined)
   const [loading, setLoading] = useState(true)
@@ -73,13 +71,6 @@ export function TagDetailsPage() {
       alive = false
     }
   }, [buildingId])
-
-  useEffect(() => {
-    if (!building) return
-    chrome.setTitle(building.name)
-    return () => chrome.setTitle('Vanguard')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [building?.id])
 
   const tag = useMemo(() => building?.tags.find((t) => t.id === tagId), [building, tagId])
 

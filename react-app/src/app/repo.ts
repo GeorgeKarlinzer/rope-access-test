@@ -167,6 +167,19 @@ export const repo = {
     })
   },
 
+  async updateBuilding(buildingId: string, patch: { name?: string; location?: string }): Promise<void> {
+    await api<void>(`/api/buildings/${encodeURIComponent(buildingId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name: patch.name, location: patch.location }),
+    })
+  },
+
+  async deleteBuilding(buildingId: string): Promise<void> {
+    await api<void>(`/api/buildings/${encodeURIComponent(buildingId)}`, {
+      method: 'DELETE',
+    })
+  },
+
   async addTag(buildingId: string, input: { type: TagType; x: number; y: number }): Promise<Tag | undefined> {
     const raw = await api<ServerTag>(`/api/buildings/${encodeURIComponent(buildingId)}/tags`, {
       method: 'POST',
