@@ -1,0 +1,6 @@
+@Vanguard.Bootstrapper_HostAddress = http://localhost:5109
+
+GET {{Vanguard.Bootstrapper_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

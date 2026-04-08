@@ -1,0 +1,27 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Server/src/Vanguard.Bootstrapper/Dockerfile
+    ports:
+      - "5109:5109"
+    environment:
+      ASPNETCORE_URLS: "http://0.0.0.0:5109"
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__Vanguard: "Data Source=/data/vanguard.db"
+    volumes:
+      - vanguard-data:/data
+
+  frontend:
+    build:
+      context: ./react-app
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_PROXY_TARGET: "http://backend:5109"
+    depends_on:
+      - backend
+
+volumes:
+  vanguard-data:

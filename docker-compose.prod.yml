@@ -1,0 +1,22 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Server/src/Vanguard.Bootstrapper/Dockerfile.prod
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ConnectionStrings__Vanguard: "Data Source=/data/vanguard.db"
+    volumes:
+      - vanguard-data:/data
+
+  frontend:
+    build:
+      context: ./react-app
+      dockerfile: Dockerfile.prod
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  vanguard-data:
